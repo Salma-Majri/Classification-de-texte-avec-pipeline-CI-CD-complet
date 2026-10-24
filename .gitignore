@@ -1,0 +1,14 @@
+# Environnement virtuel Python
+venv/
+env/
+ENV/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Tests & Artefacts locaux
+.pytest_cache/
+.DS_Store
+*.log
