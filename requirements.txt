@@ -1,0 +1,19 @@
+# Web Framework & API
+fastapi>=0.100.0
+uvicorn>=0.22.0
+pydantic>=2.0
+
+# MLOps & Experiment Tracking
+mlflow>=2.5.0
+
+# NLP & Machine Learning
+nltk>=3.8
+transformers>=4.30.0
+torch>=2.0.0
+scikit-learn>=1.2.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Testing & Validation
+pytest>=7.0.0
+httpx>=0.24.0
