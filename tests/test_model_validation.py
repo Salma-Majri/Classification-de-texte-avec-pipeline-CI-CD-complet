@@ -1,18 +1,24 @@
 import joblib
 import os
 import pytest
+import sys
+import subprocess
 from src.preprocessing import clean_text
-
 # Chemin relatif vers le modèle (comme dans train.py)
 MODEL_PATH = os.path.join("models", "model.pkl")
 
 @pytest.fixture(scope="module")
 def model():
-    """Charge le modèle une seule fois pour tous les tests."""
-    assert os.path.exists(MODEL_PATH), f"Le modèle n'existe pas à {MODEL_PATH}"
+    """Charge le modele ; le regenere via train.py s'il est absent (cas CI)."""
+    if not os.path.exists(MODEL_PATH):
+        print("\n[INFO] Modele absent du workspace, regeneration via src.train ...\n")
+        subprocess.run(
+            [sys.executable, "-m", "src.train", "--sample", "10000"],
+            check=True,
+        )
+    
+    assert os.path.exists(MODEL_PATH), f"Le modele n'existe pas a {MODEL_PATH}"
     return joblib.load(MODEL_PATH)
-
-
 def test_seuil_de_performance(model):
     """Vérifie que le modèle atteint le seuil minimal d'accuracy sur un échantillon de test."""
     # On utilise un petit échantillon connu pour valider rapidement
