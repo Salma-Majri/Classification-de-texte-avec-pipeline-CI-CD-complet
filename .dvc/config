@@ -1,4 +1,2 @@
-[core]
-    remote = local_cache
-['remote "local_cache"']
-    url = ../.dvc_cache
+['remote "origin"']
+    url = https://dagshub.com/Salma-Majri/Classification-de-texte-avec-pipeline-CI-CD-complet.dvc
