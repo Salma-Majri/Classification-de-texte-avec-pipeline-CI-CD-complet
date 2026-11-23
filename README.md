@@ -6,10 +6,11 @@ Catégorisation automatique d'avis (IMDB Reviews) avec déploiement continu séc
 ## État d'avancement
 
 - [x] Structure du projet et dépendances
-- [x] API FastAPI (`/`, `/health`, `/predict`), `/predict` renvoie pour l'instant une réponse factice
+- [ ] API FastAPI (`/`, `/health`, `/predict`), `/predict` renvoie pour l'instant une réponse factice
 - [x] Tests unitaires (pytest)
 - [x] CI GitHub Actions : tests + build Docker + smoke test
 - [x] Image Docker de l'API
+- [x] Modèle NLP entraîné (TF-IDF + LogReg, accuracy 0,89) et tests de validation du modèle
 - [ ] Modèle NLP (TF-IDF + LogReg) intégré à l'API
 - [ ] Suivi des expériences (MLflow), données versionnées (DVC), rapports CML
 - [ ] Déploiement staging puis production, retour arrière automatique
@@ -58,6 +59,41 @@ curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -
 ```bash
 python -m pytest tests/ -v
 ```
+
+## Entraînement et reproductibilité
+
+Commande de relance du pipeline depuis un clone du dépôt :
+
+```bash
+python -m venv venv
+venv\Scripts\activate              # Windows
+pip install -r requirements.txt
+python -m src.train                # entraînement complet (~2 min)
+python -m src.train --sample 2000  # mode rapide pour la CI
+```
+
+Le modèle entraîné est sauvegardé dans `models/model.pkl` (chemin relatif, sans
+variable globale ni chemin absolu). La graine `SEED = 42` est fixée pour la
+reproductibilité des résultats.
+
+### Variables d'environnement attendues
+
+| Variable | Rôle | Défaut |
+| --- | --- | --- |
+| `MODEL_PATH` | chemin du modèle chargé par l'API | `models/model.pkl` |
+| `MLFLOW_TRACKING_URI` | suivi des expériences (ajout prévu au jalon J4) | suivi local |
+
+### Limites connues
+
+- Baseline TF-IDF + LogisticRegression : accuracy **0,89** sur IMDB ; les phrases
+  ironiques ou très courtes restent mal classées.
+- Le seuil de validation est abaissé à **0,80** en mode `--sample` (bruit
+  statistique sur petit échantillon) ; il reste à **0,85** sur l'entraînement complet.
+- Le fine-tuning `transformers` n'est pas inclus dans l'image Docker (poids
+  torch ≈ 3 Go) ; il est optionnel et documenté séparément.
+
+
+
 
 ## Docker
 

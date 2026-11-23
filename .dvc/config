@@ -1,0 +1,4 @@
+[core]
+    remote = origin
+['remote "origin"']
+    url = https://dagshub.com/Salma-Majri/Classification-de-texte-avec-pipeline-CI-CD-complet.dvc
