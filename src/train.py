@@ -1,7 +1,9 @@
 import argparse
 import os
 import joblib
+import numpy as np
 import mlflow
+from mlflow.models import infer_signature
 import mlflow.sklearn
 import pandas as pd
 from datasets import load_dataset
@@ -65,7 +67,7 @@ def main():
     else:
         print(f"ALERTE : accuracy < {seuil}")
 
-    # === DEBUT AJOUT MLFLOW ===
+        # === DEBUT AJOUT MLFLOW AVANCÉ ===
     import os
     os.environ["MLFLOW_TRACKING_USERNAME"] = "fatimazahramassane"
     os.environ["MLFLOW_TRACKING_PASSWORD"] = "9a31091bc76bd61738366ea2145978a3926cc93c"
@@ -82,15 +84,27 @@ def main():
         mlflow.log_metric("accuracy", acc)
         mlflow.log_metric("f1", f1)
         
-        # ✅ LA SEULE MODIFICATION : on autorise le type de matrice du TF-IDF
+        # NOUVEAU : Extraire les 10 mots les plus importants (Interprétabilité)
+        feature_names = model.named_steps['tfidf'].get_feature_names_out()
+        coefs = model.named_steps['clf'].coef_[0]
+        top_positive_words = [feature_names[i] for i in np.argsort(coefs)[-10:]]
+        mlflow.log_param("top_10_positive_words", ", ".join(top_positive_words))
+        
+        # NOUVEAU : Déduire la signature du modèle (Input/Output) pour l'API
+        sample_input = X_train[:5]
+        sample_prediction = model.predict(sample_input)
+        signature = infer_signature(sample_input, sample_prediction)
+        
+        # Enregistrement avec la signature
         mlflow.sklearn.log_model(
             model, 
             "model_sklearn",
+            signature=signature, # <-- C'est ça qui aide Salma !
             skops_trusted_types=['scipy.sparse._csr.csr_matrix']
         )
         
-        print("Metriques et modele enregistres dans MLflow (DagsHub).")
-    # === FIN AJOUT MLFLOW ===
+        print("Metriques, signature et modele enregistres dans MLflow (DagsHub).")
+    # === FIN AJOUT MLFLOW AVANCÉ ===
     os.makedirs("models", exist_ok=True)
     joblib.dump(model, MODEL_PATH)
     print(f"Modele sauvegarde dans {MODEL_PATH}")
