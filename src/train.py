@@ -1,6 +1,8 @@
 import argparse
 import os
 import joblib
+import mlflow
+import mlflow.sklearn
 import pandas as pd
 from datasets import load_dataset
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -11,7 +13,7 @@ from sklearn.pipeline import Pipeline
 
 from src.preprocessing import clean_text
 
-# Hyperparametres (visibles en haut pour le suivi MLflow de J4)
+# Hyperparametres (visibles en haut pour le suivi MLflow)
 MAX_FEATURES = 5000
 C = 1.0
 NGRAM_RANGE = (1, 2)
@@ -56,9 +58,39 @@ def main():
     acc = accuracy_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred)
     print(f"Accuracy: {acc:.4f} | F1: {f1:.4f}")
-    seuil = 0.85 if args.sample is None else 0.80
-    print(f"OK : seuil {seuil} atteint" if acc >= seuil else f"ALERTE : accuracy < {seuil}")
 
+    seuil = 0.85 if args.sample is None else 0.80
+    if acc >= seuil:
+        print(f"OK : seuil {seuil} atteint")
+    else:
+        print(f"ALERTE : accuracy < {seuil}")
+
+    # === DEBUT AJOUT MLFLOW ===
+    import os
+    os.environ["MLFLOW_TRACKING_USERNAME"] = "fatimazahramassane"
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = "9a31091bc76bd61738366ea2145978a3926cc93c"
+    
+    mlflow.set_tracking_uri(
+        "https://dagshub.com/Salma-Majri/"
+        "Classification-de-texte-avec-pipeline-CI-CD-complet.mlflow"
+    )
+
+    with mlflow.start_run(run_name="tfidf_logreg_baseline"):
+        mlflow.log_param("max_features", MAX_FEATURES)
+        mlflow.log_param("C", C)
+        mlflow.log_param("ngram_range", f"{NGRAM_RANGE[0]}-{NGRAM_RANGE[1]}")
+        mlflow.log_metric("accuracy", acc)
+        mlflow.log_metric("f1", f1)
+        
+        # ✅ LA SEULE MODIFICATION : on autorise le type de matrice du TF-IDF
+        mlflow.sklearn.log_model(
+            model, 
+            "model_sklearn",
+            skops_trusted_types=['scipy.sparse._csr.csr_matrix']
+        )
+        
+        print("Metriques et modele enregistres dans MLflow (DagsHub).")
+    # === FIN AJOUT MLFLOW ===
     os.makedirs("models", exist_ok=True)
     joblib.dump(model, MODEL_PATH)
     print(f"Modele sauvegarde dans {MODEL_PATH}")
